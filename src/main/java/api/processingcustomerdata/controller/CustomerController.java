@@ -2,6 +2,7 @@ package api.processingcustomerdata.controller;
 
 import api.processingcustomerdata.model.Customer;
 import api.processingcustomerdata.service.CustomerService;
+import com.opencsv.exceptions.CsvValidationException;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -17,7 +18,7 @@ public class CustomerController {
     }
 
     @GetMapping("/{region}/{classification}")
-    public List<Customer> getEligibleCustomers(@PathVariable String region, @PathVariable String classification) throws IOException {
+    public List<Customer> getEligibleCustomers(@PathVariable String region, @PathVariable String classification) throws IOException, CsvValidationException {
         return customerService.getEligibleCustomers(region, classification);
     }
 }
