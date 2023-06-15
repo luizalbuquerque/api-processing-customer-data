@@ -5,11 +5,13 @@ import api.processingcustomerdata.service.CustomerService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import org.springframework.stereotype.Service;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -18,7 +20,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final String CSV_FILE_PATH = "path/to/inputbackend.csv";
     private final String JSON_FILE_PATH = "path/to/inputbackend.json";
 
-    public List<Customer> getEligibleCustomers(String region, String classification) throws IOException {
+    public List<Customer> getEligibleCustomers(String region, String classification) throws IOException, CsvValidationException {
         List<Customer> customers = loadCustomers();
         List<Customer> eligibleCustomers = new ArrayList<>();
 
@@ -31,7 +33,7 @@ public class CustomerServiceImpl implements CustomerService {
         return eligibleCustomers;
     }
 
-    private List<Customer> loadCustomers() throws IOException {
+    private List<Customer> loadCustomers() throws IOException, CsvValidationException {
         List<Customer> customers = new ArrayList<>();
 
         // Load CSV customers
@@ -40,7 +42,7 @@ public class CustomerServiceImpl implements CustomerService {
         ObjectReader csvObjectReader = new ObjectMapper().readerFor(Customer.class);
 
         while ((nextLine = csvReader.readNext()) != null) {
-            Customer customer = csvObjectReader.readValue(nextLine);
+            Customer customer = csvObjectReader.readValue(Arrays.toString(nextLine));
             customers.add(customer);
         }
 
@@ -65,6 +67,7 @@ public class CustomerServiceImpl implements CustomerService {
         // Use as informações do objeto Customer para determinar se o cliente é elegível
         // com base na região e na classificação fornecida
         // Retorne true se o cliente for elegível, caso contrário, retorne false
+        return false;
     }
 
 }
