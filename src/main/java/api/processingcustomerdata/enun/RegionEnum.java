@@ -1,6 +1,6 @@
-package api.processingcustomerdata.dto;
+package api.processingcustomerdata.enun;
 
-public enum Region {
+public enum RegionEnum {
     NORTE,
     NORDESTE,
     CENTRO_OESTE,
