@@ -1,10 +1,9 @@
-package api.processingcustomerdata.dto;
-
+package api.processingcustomerdata.model;
 
 import lombok.Data;
 
 @Data
-public class PictureDto {
+public class Picture {
 
     private String large;
     private String medium;

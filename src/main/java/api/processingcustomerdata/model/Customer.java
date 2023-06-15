@@ -1,21 +1,21 @@
-package api.processingcustomerdata.dto;
+package api.processingcustomerdata.model;
 
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class CustomerOutputDto {
+public class Customer {
 
     private String type;
     private String gender;
-    private NameDto name;
-    private LocationOutputDto location;
+    private Name name;
+    private Location location;
     private String email;
     private String birthday;
     private String registered;
     private List<String> telephoneNumbers;
     private List<String> mobileNumbers;
-    private PictureDto picture;
+    private Picture picture;
     private String nationality;
 }
