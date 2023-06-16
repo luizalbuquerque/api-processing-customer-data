@@ -21,8 +21,8 @@ import java.util.List;
 @Service
 public class CustomerServiceImpl implements CustomerService {
 
-    private String CSV_FILE_PATH = "path/to/inputbackend.csv";
-    private String JSON_FILE_PATH = "path/to/inputbackend.json";
+    private String CSV_FILE_PATH = "C:\\Users\\Albuquerque\\Documents\\WorkSpace_2023\\api-processing-customer-data\\src\\main\\resources\\inputbackend.csv";
+    private String JSON_FILE_PATH = "C:\\Users\\Albuquerque\\Documents\\WorkSpace_2023\\api-processing-customer-data\\src\\main\\resources\\inputbackend.json";
 
     private void downloadFiles() {
         try {
@@ -80,20 +80,21 @@ public class CustomerServiceImpl implements CustomerService {
             }
         }
 
-
         csvReader.close();
 
         // Load JSON customers
         ObjectReader jsonObjectReader = new ObjectMapper().readerFor(Customer.class);
         FileReader jsonFileReader = new FileReader(JSON_FILE_PATH);
-        Customer[] jsonCustomers = jsonObjectReader.readValue(jsonFileReader);
+        Customer jsonCustomer = jsonObjectReader.readValue(jsonFileReader);
 
-        customers.addAll(Arrays.asList(jsonCustomers));
+        customers.add(jsonCustomer);
 
         jsonFileReader.close();
 
+
         return customers;
     }
+
 
 
     private boolean isCustomerEligible(Customer customer, String region, String classification) {
