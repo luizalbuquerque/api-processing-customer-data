@@ -2,6 +2,7 @@ package api.processingcustomerdata.service.impl;
 
 import api.processingcustomerdata.model.Customer;
 import api.processingcustomerdata.service.CustomerService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.opencsv.CSVReader;
@@ -65,11 +66,20 @@ public class CustomerServiceImpl implements CustomerService {
         String[] nextLine;
         ObjectReader csvObjectReader = new ObjectMapper().readerFor(Customer.class);
 
+        // Skip the header line
+        csvReader.readNext();
+
         while ((nextLine = csvReader.readNext()) != null) {
             String csvLine = String.join(",", nextLine);
-            Customer customer = csvObjectReader.readValue(csvLine);
-            customers.add(customer);
+            try {
+                Customer customer = csvObjectReader.readValue(csvLine);
+                customers.add(customer);
+            } catch (JsonProcessingException e) {
+                System.out.println("Error processing CSV line: " + csvLine);
+                e.printStackTrace();
+            }
         }
+
 
         csvReader.close();
 
@@ -84,6 +94,7 @@ public class CustomerServiceImpl implements CustomerService {
 
         return customers;
     }
+
 
     private boolean isCustomerEligible(Customer customer, String region, String classification) {
         // Implemente a lógica de classificação de acordo com as regras de negócio

@@ -1,12 +1,14 @@
 package api.processingcustomerdata.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
-
 import java.util.List;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Customer {
 
+    private List<Result> results;
     private String type;
     private String gender;
     private Name name;
