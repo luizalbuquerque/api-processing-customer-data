@@ -20,4 +20,5 @@ public class Customer {
     private List<String> mobileNumbers;
     private Picture picture;
     private String nationality;
+    private String classification;
 }

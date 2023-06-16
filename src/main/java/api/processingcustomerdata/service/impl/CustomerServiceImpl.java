@@ -17,6 +17,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
@@ -98,10 +99,18 @@ public class CustomerServiceImpl implements CustomerService {
 
 
     private boolean isCustomerEligible(Customer customer, String region, String classification) {
-        // Implemente a lógica de classificação de acordo com as regras de negócio
-        // Use as informações do objeto Customer para determinar se o cliente é elegível
-        // com base na região e na classificação fornecida
-        // Retorne true se o cliente for elegível, caso contrário, retorne false
-        return false;
+        // Verificar se a região do cliente corresponde à região fornecida
+        if (!customer.getLocation().getRegion().equalsIgnoreCase(region)) {
+            return false;
+        }
+
+        // Verificar se a classificação do cliente corresponde à classificação fornecida
+        if (!customer.getClassification().equalsIgnoreCase(classification)) {
+            return false;
+        }
+
+        // Se o cliente atender a ambas as condições, ele é elegível
+        return true;
     }
+
 }
