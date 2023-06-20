@@ -21,4 +21,6 @@ public class Customer {
     private Picture picture;
     private String nationality;
     private String classification;
+    private String[] fields;
+
 }

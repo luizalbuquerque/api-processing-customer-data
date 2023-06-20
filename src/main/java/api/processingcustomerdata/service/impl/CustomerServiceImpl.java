@@ -1,23 +1,25 @@
 package api.processingcustomerdata.service.impl;
 
+import api.processingcustomerdata.model.CustomCustomerDeserializer;
 import api.processingcustomerdata.model.Customer;
+import api.processingcustomerdata.model.Location;
 import api.processingcustomerdata.service.CustomerService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.core.type.TypeReference;
+
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
@@ -59,35 +61,45 @@ public class CustomerServiceImpl implements CustomerService {
         return eligibleCustomers;
     }
 
+
     private List<Customer> loadCustomers() throws IOException, CsvValidationException {
         List<Customer> customers = new ArrayList<>();
 
         // Load CSV customers
         CSVReader csvReader = new CSVReader(new FileReader(CSV_FILE_PATH));
-        String[] nextLine;
-        ObjectReader csvObjectReader = new ObjectMapper().readerFor(Customer.class);
 
         // Skip the header line
         csvReader.readNext();
 
+        String[] nextLine;
         while ((nextLine = csvReader.readNext()) != null) {
             String csvLine = String.join(",", nextLine);
-            try {
-                Customer customer = csvObjectReader.readValue(csvLine);
-                customers.add(customer);
-            } catch (JsonProcessingException e) {
-                System.out.println("Error processing CSV line: " + csvLine);
-                e.printStackTrace();
-            }
+
+            // Convert the "gender" field to a JSON array
+            String[] fields = csvLine.split(",");
+            String[] genderField = new String[]{fields[0]};
+            fields[0] = new ObjectMapper().writeValueAsString(genderField);
+            String jsonLine = String.join(",", fields);
+
+            // Parse the JSON line using the custom deserializer
+            ObjectMapper objectMapper = new ObjectMapper();
+            SimpleModule module = new SimpleModule();
+            module.addDeserializer(Customer.class, new CustomCustomerDeserializer());
+            objectMapper.registerModule(module);
+
+            Customer customer = objectMapper.readValue(jsonLine, Customer.class);
+            customers.add(customer);
         }
 
         csvReader.close();
 
+
         // Load JSON customers
         ObjectReader jsonObjectReader = new ObjectMapper().readerFor(Customer.class);
         FileReader jsonFileReader = new FileReader(JSON_FILE_PATH);
-        Customer jsonCustomer = jsonObjectReader.readValue(jsonFileReader);
 
+        // Read JSON as a single customer object
+        Customer jsonCustomer = jsonObjectReader.readValue(jsonFileReader);
         customers.add(jsonCustomer);
 
         jsonFileReader.close();
@@ -97,20 +109,21 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
 
-
     private boolean isCustomerEligible(Customer customer, String region, String classification) {
+
         // Verificar se a região do cliente corresponde à região fornecida
-        if (!customer.getLocation().getRegion().equalsIgnoreCase(region)) {
+        Location location = customer.getLocation();
+        if (location == null || !location.getRegion().equalsIgnoreCase(region)) {
             return false;
         }
 
         // Verificar se a classificação do cliente corresponde à classificação fornecida
-        if (!customer.getClassification().equalsIgnoreCase(classification)) {
+        String classificationCustomer = customer.getClassification();
+        if (classificationCustomer == null || !classificationCustomer.equalsIgnoreCase(classification)) {
             return false;
         }
 
         // Se o cliente atender a ambas as condições, ele é elegível
         return true;
     }
-
 }
