@@ -1,24 +1,21 @@
 package api.processingcustomerdata.service.impl;
 
-import api.processingcustomerdata.model.CustomCustomerDeserializer;
-import api.processingcustomerdata.model.Customer;
-import api.processingcustomerdata.model.Location;
+import api.processingcustomerdata.model.*;
 import api.processingcustomerdata.service.CustomerService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
-import com.fasterxml.jackson.core.type.TypeReference;
-
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -49,10 +46,10 @@ public class CustomerServiceImpl implements CustomerService {
     public List<Customer> getEligibleCustomers(String region, String classification) throws IOException, CsvValidationException {
         downloadFiles();
 
-        List<Customer> customers = loadCustomers();
+        List<Customer> customersList = loadCustomers();
         List<Customer> eligibleCustomers = new ArrayList<>();
 
-        for (Customer customer : customers) {
+        for (Customer customer : customersList) {
             if (isCustomerEligible(customer, region, classification)) {
                 eligibleCustomers.add(customer);
             }
@@ -61,9 +58,21 @@ public class CustomerServiceImpl implements CustomerService {
         return eligibleCustomers;
     }
 
-
     private List<Customer> loadCustomers() throws IOException, CsvValidationException {
-        List<Customer> customers = new ArrayList<>();
+
+        List<Customer> customersListOfLoadCustomers = new ArrayList<>();
+
+        // Add all CSV customersListOfLoadCustomers to our customer list
+        customersListOfLoadCustomers.addAll(loadCsvCustomers());
+
+        // Add all Json customersListOfLoadCustomers to our customer list
+        customersListOfLoadCustomers.addAll(loadJsonCustomers());
+
+        return customersListOfLoadCustomers;
+    }
+
+    private List<Customer> loadCsvCustomers() throws IOException, CsvValidationException {
+        List<Customer> csvCustomers = new ArrayList<>();
 
         // Load CSV customers
         CSVReader csvReader = new CSVReader(new FileReader(CSV_FILE_PATH));
@@ -74,56 +83,117 @@ public class CustomerServiceImpl implements CustomerService {
         String[] nextLine;
         while ((nextLine = csvReader.readNext()) != null) {
             String csvLine = String.join(",", nextLine);
-
-            // Convert the "gender" field to a JSON array
-            String[] fields = csvLine.split(",");
-            String[] genderField = new String[]{fields[0]};
-            fields[0] = new ObjectMapper().writeValueAsString(genderField);
-            String jsonLine = String.join(",", fields);
-
-            // Parse the JSON line using the custom deserializer
-            ObjectMapper objectMapper = new ObjectMapper();
-            SimpleModule module = new SimpleModule();
-            module.addDeserializer(Customer.class, new CustomCustomerDeserializer());
-            objectMapper.registerModule(module);
-
-            Customer customer = objectMapper.readValue(jsonLine, Customer.class);
-            customers.add(customer);
+            Customer customer = parseCsvLine(csvLine);
+            csvCustomers.add(customer);
         }
 
         csvReader.close();
 
+        return csvCustomers;
+    }
 
-        // Load JSON customers
-        ObjectReader jsonObjectReader = new ObjectMapper().readerFor(Customer.class);
-        FileReader jsonFileReader = new FileReader(JSON_FILE_PATH);
+    private Customer parseCsvLine(String csvLine) throws IOException {
+        String[] fields = csvLine.split(",");
 
-        // Read JSON as a single customer object
-        Customer jsonCustomer = jsonObjectReader.readValue(jsonFileReader);
-        customers.add(jsonCustomer);
+        Customer customer = new Customer();
+        customer.setType(fields[0]);
+        customer.setGender(fields[1]);
 
-        jsonFileReader.close();
+        Name name = new Name();
+        name.setTitle(fields[2]);
+        name.setFirst(fields[3]);
+        name.setLast(fields[4]);
+        customer.setName(name);
 
+        Location location = new Location();
+        location.setStreet(fields[5]);
+        location.setCity(fields[6]);
+        location.setState(fields[7]);
+        location.setCountry(fields[8]);
+        location.setPostcode(fields[9]);
+        location.setTimezone(fields[10]);
+        location.setRegion(fields[11]);
+        location.setCoordinates(fields[12]);
+        customer.setLocation(location);
 
-        return customers;
+        customer.setEmail(fields[13]);
+        customer.setBirthday(fields[14]);
+        customer.setRegistered(fields[15]);
+
+        List<String> mobileNumbers = new ArrayList<>();
+        mobileNumbers.add(fields[16]);
+        // Adicione mais números de celular, se necessário
+        customer.setMobileNumbers(mobileNumbers);
+
+        Picture picture = new Picture();
+        picture.setLarge(fields[17]);
+        picture.setMedium(fields[18]);
+        picture.setThumbnail(fields[19]);
+        customer.setPicture(picture);
+
+        customer.setNationality(fields[20]);
+        customer.setClassification(fields[21]);
+
+        // Armazene todos os campos para referência futura, se necessário
+        customer.setFields(fields);
+
+        return customer;
     }
 
 
+    private List<Customer> loadJsonCustomers() throws IOException {
+        List<Customer> jsonCustomersList = new ArrayList<>();
+
+        // Load JSON customers
+        ObjectMapper jsonMapper = new ObjectMapper();
+        File jsonFile = new File(JSON_FILE_PATH);
+
+        if (jsonFile.exists()) {
+            JsonNode rootNode = jsonMapper.readTree(jsonFile);
+
+            if (rootNode.isArray()) {
+                for (JsonNode jsonNode : rootNode) {
+                    try {
+                        Customer customer = jsonMapper.treeToValue(jsonNode, Customer.class);
+                        jsonCustomersList.add(customer);
+                    } catch (JsonProcessingException e) {
+                        // Handle the exception as per your requirements
+                        System.err.println("Error processing JSON node: " + e.getMessage());
+                    }
+                }
+            } else {
+                try {
+                    Customer customer = jsonMapper.readValue(jsonFile, Customer.class);
+                    jsonCustomersList.add(customer);
+                } catch (JsonProcessingException e) {
+                    // Handle the exception as per your requirements
+                    System.err.println("Error processing JSON file: " + e.getMessage());
+
+                    Customer customer = new Customer();
+//                    customer.setName(rootNode.get("name").get("first").asText());
+                    customer.setEmail(rootNode.get("email").asText());
+                    // Preencha os demais atributos do Customer conforme necessário
+                    jsonCustomersList.add(customer);
+                }
+            }
+        }
+
+        return jsonCustomersList;
+    }
+
+
+
+
     private boolean isCustomerEligible(Customer customer, String region, String classification) {
-
-        // Verificar se a região do cliente corresponde à região fornecida
         Location location = customer.getLocation();
-        if (location == null || !location.getRegion().equalsIgnoreCase(region)) {
-            return false;
-        }
-
-        // Verificar se a classificação do cliente corresponde à classificação fornecida
         String classificationCustomer = customer.getClassification();
-        if (classificationCustomer == null || !classificationCustomer.equalsIgnoreCase(classification)) {
-            return false;
-        }
 
-        // Se o cliente atender a ambas as condições, ele é elegível
+//        if (location == null || !location.getRegion().equalsIgnoreCase(region)) {
+//            return false;
+//        }
+//
+//        return classificationCustomer != null && classificationCustomer.equalsIgnoreCase(classification);
+//    }
         return true;
     }
 }

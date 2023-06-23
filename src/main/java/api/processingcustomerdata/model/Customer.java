@@ -8,19 +8,24 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Customer {
 
-    private List<Result> results;
-    private String type;
-    private String gender;
     private Name name;
+
     private Location location;
+
     private String email;
     private String birthday;
     private String registered;
+
+//    private List<Result> results;
+    private String type;
+    private String gender;
+
     private List<String> telephoneNumbers;
     private List<String> mobileNumbers;
     private Picture picture;
     private String nationality;
     private String classification;
+
     private String[] fields;
 
 }
